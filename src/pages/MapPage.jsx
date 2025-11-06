@@ -1,18 +1,36 @@
 import { useEffect, useMemo, useState } from 'react'
 import 'leaflet/dist/leaflet.css'
 import './pages-css.css'
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import SearchButton from '../components/SearchButton.jsx'
 import HospitalButton from '../components/HospitalButton.jsx'
 import ZoomControls from '../components/ZoomControls.jsx'
-import { FaSearch, FaFilter, FaRegStickyNote, FaHospital, FaPlus, FaSignOutAlt, FaUsers, FaAmbulance } from 'react-icons/fa'
+import EditCarPanel from '../components/EditCarPanel.jsx'
+import AddHospitalPanel from '../components/AddHospitalPanel.jsx'
+import { FaSearch, FaFilter, FaEdit, FaHospital, FaPlus, FaSignOutAlt, FaUsers, FaAmbulance, FaTimes, FaCheck, FaUser } from 'react-icons/fa'
 
 // Иконка по умолчанию для маркеров Leaflet поправка путей (иначе не видно маркеров в Vite)
 import iconUrl from 'leaflet/dist/images/marker-icon.png'
 import iconShadowUrl from 'leaflet/dist/images/marker-shadow.png'
 const DefaultIcon = L.icon({ iconUrl, shadowUrl: iconShadowUrl, iconAnchor: [12, 41] })
 L.Marker.prototype.options.icon = DefaultIcon
+
+function LeafletZoomBindings() {
+  const map = useMap()
+  useEffect(() => {
+    const handler = (e) => {
+      const btn = e.target.closest('.zoom-btn')
+      if (!btn) return
+      const act = btn.getAttribute('data-action')
+      if (act === 'in') map.zoomIn()
+      if (act === 'out') map.zoomOut()
+    }
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [map])
+  return null
+}
 
 export default function MapPage({ regionBounds, regionCenter, user, hospitals = [], ambulances = [] }) {
   // regionBounds: [[southWestLat, southWestLng],[northEastLat, northEastLng]] или null
@@ -23,6 +41,10 @@ export default function MapPage({ regionBounds, regionCenter, user, hospitals = 
   const [showHospitals, setShowHospitals] = useState(false)
   const [filterOrg, setFilterOrg] = useState('')
   const [query, setQuery] = useState('')
+
+  const [editCar, setEditCar] = useState(null) // {regNumber,gpsNumber,hospital}
+  const [showAddHospital, setShowAddHospital] = useState(false)
+  const [newHospitalName, setNewHospitalName] = useState('')
 
   const mapBounds = useMemo(() => {
     if (regionBounds && regionBounds.length === 2) return regionBounds
@@ -43,14 +65,29 @@ export default function MapPage({ regionBounds, regionCenter, user, hospitals = 
     })
   }, [ambulances, filterOrg, query])
 
+  const handleSaveCar = () => {
+    // TODO: сохранить изменения через API/Redux
+    setEditCar(null)
+  }
+  const handleAddCarFromHospital = () => {
+    // открываем форму добавления/редактирования машины пустой
+    setEditCar({ regNumber: '', gpsNumber: '', hospital: newHospitalName || '' })
+  }
+  const handleSaveHospital = () => {
+    // TODO: отправить newHospitalName на сервер
+    setShowAddHospital(false)
+    setNewHospitalName('')
+  }
+
   return (
     <div className="map-page">
       {/* Карта */}
-      <MapContainer className="map-root" center={center} zoom={10} bounds={mapBounds || undefined} style={{height: '100vh', width: '100vw'}}>
+      <MapContainer className="map-root" center={center} zoom={10} bounds={mapBounds || undefined} style={{height: '100vh', width: '100vw'}} zoomControl={false}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <LeafletZoomBindings />
         {filteredAmbulances.map((car) => (
           <Marker key={car.id} position={car.position}>
             <Popup>
@@ -79,15 +116,19 @@ export default function MapPage({ regionBounds, regionCenter, user, hospitals = 
       {/* Боковая панель поиска машин */}
       {showSearch && (
         <aside className="side-panel left">
-          <div className="side-header">Поиск машин</div>
+          <div className="side-header with-actions">
+            <span>Поиск машин</span>
+            <div className="actions">
+              <button className="icon-btn" title="Закрыть" onClick={() => setShowSearch(false)}><FaTimes /></button>
+            </div>
+          </div>
 
           {/* Фильтр только для супер-админа */}
-          {user?.role === 'superadmin' && (
-            <div className="field">
-              <div className="field-icon"><FaFilter /></div>
-              <input className="field-input" placeholder="Фильтр по мед. организации" value={filterOrg} onChange={(e)=>setFilterOrg(e.target.value)} />
-            </div>
-          )}
+          {/* Поле Фильтр (для всех, фильтрация по больнице) */}
+          <div className="field">
+            <div className="field-icon"><FaHospital /></div>
+            <input className="field-input" placeholder="Фильтр по ��ольнице" value={filterOrg} onChange={(e)=>setFilterOrg(e.target.value)} />
+          </div>
 
           {/* Поиск доступен всем */}
           <div className="field">
@@ -98,12 +139,13 @@ export default function MapPage({ regionBounds, regionCenter, user, hospitals = 
           <div className="list">
             {filteredAmbulances.map((car) => (
               <div className="list-item car" key={car.id}>
+                <div className="icon-left"><FaAmbulance /></div>
                 <div className="list-body">
                   <div className="car-title">{car.regNumber}</div>
                   <div className="car-sub">GPS: {car.gpsNumber}</div>
                 </div>
-                <button className="icon-btn" title="Изменить свойства">
-                  <FaRegStickyNote />
+                <button className="icon-btn" title="Изменить" onClick={() => setEditCar({ ...car })}>
+                  <FaEdit />
                 </button>
               </div>
             ))}
@@ -114,9 +156,14 @@ export default function MapPage({ regionBounds, regionCenter, user, hospitals = 
       {/* Боковая панель поиска мед. организаций */}
       {showHospitals && (
         <aside className="side-panel right">
-          <div className="side-header">Поиск мед. организации</div>
+          <div className="side-header with-actions">
+            <span>Поиск мед. организации</span>
+            <div className="actions">
+              <button className="icon-btn" title="Закрыть" onClick={() => setShowHospitals(false)}><FaTimes /></button>
+            </div>
+          </div>
 
-          <button className="add-btn">
+          <button className="add-btn" onClick={() => setShowAddHospital(true)}>
             <FaPlus />
             <span>Добавить мед. организацию</span>
           </button>
@@ -142,7 +189,7 @@ export default function MapPage({ regionBounds, regionCenter, user, hospitals = 
           </div>
 
           <div className="user-row">
-            <div className="icon-left"><FaUsers /></div>
+            <div className="icon-left"><FaUser /></div>
             <div className="user-name">{user?.login || 'user'}</div>
             <button className="icon-btn" title="Выйти">
               <FaSignOutAlt />
@@ -150,6 +197,25 @@ export default function MapPage({ regionBounds, regionCenter, user, hospitals = 
           </div>
         </aside>
       )}
+
+      {/* Панель редактирования машины */}
+      <EditCarPanel
+        car={editCar}
+        onChange={setEditCar}
+        onSave={handleSaveCar}
+        onClose={() => setEditCar(null)}
+      />
+
+      {/* Панель добавления ме��. организации */}
+      <AddHospitalPanel
+        open={showAddHospital}
+        value={newHospitalName}
+        onChange={setNewHospitalName}
+        onAddCar={handleAddCarFromHospital}
+        onAddUser={() => { /* TODO */ }}
+        onSave={handleSaveHospital}
+        onClose={() => setShowAddHospital(false)}
+      />
     </div>
   )
 }

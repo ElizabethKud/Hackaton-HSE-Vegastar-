@@ -43,8 +43,8 @@
 .right-middle { right: 12px; top: 50%; transform: translateY(-50%); }
 
 .fab {
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   border: 1px solid #d1d5db;
   background: #fff;
@@ -53,6 +53,7 @@
   justify-content: center;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   cursor: pointer;
+  font-size: 22px;
 }
 
 .zoom-controls {
@@ -61,12 +62,12 @@
   gap: 8px;
 }
 .zoom-btn {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 8px;
   border: 1px solid #d1d5db;
   background: #fff;
-  font-size: 20px;
+  font-size: 22px;
   cursor: pointer;
 }
 
@@ -84,7 +85,9 @@
 }
 .side-panel.left { left: 0; }
 .side-panel.right { right: 0; }
-.side-header { font-weight: 600; margin-bottom: 12px; }
+.side-panel.overlay { z-index: 1200; box-shadow: 0 0 30px rgba(0,0,0,0.18); }
+.side-header { font-weight: 600; margin-bottom: 12px; display:flex; align-items:center; justify-content: space-between; }
+.side-header.with-actions .actions .icon-btn { font-size: 18px; }
 
 .field {
   display: flex;
@@ -109,14 +112,22 @@
   outline: none;
   padding: 10px 12px;
 }
+.field-input.outline {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+.form-group { margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
+.form-group .label { font-size: 13px; color: #374151; }
 
 .list { flex: 1; overflow: auto; margin-top: 8px; }
 .list-item { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-bottom: 1px solid #f3f4f6; }
-.list-item .icon-left { width: 28px; display: flex; justify-content: center; color: #111827; }
+.list-item .icon-left { width: 32px; display: flex; justify-content: center; color: #111827; font-size: 18px; }
+.icon-btn { background: transparent; border: none; cursor: pointer; color: #111827; font-size: 18px; }
 .list-item .list-body { flex: 1; }
 .car-title { font-weight: 600; }
 .car-sub { font-size: 12px; color: #6b7280; }
-.icon-btn { background: transparent; border: none; cursor: pointer; color: #111827; }
+
 
 .add-btn {
   display: inline-flex;
@@ -132,6 +143,11 @@
 .divider { height: 1px; background: #e5e7eb; margin: 10px 0; }
 .user-row { display: flex; align-items: center; gap: 10px; }
 .user-name { flex: 1; }
+
+.two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
+.col { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
+.col-header { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 10px; }
+.add-btn.ghost { background: #fff; color: #111827; border: 1px dashed #cbd5e1; }
 
 /* Форма */
 .login-form {
